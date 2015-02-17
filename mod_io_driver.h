@@ -35,7 +35,7 @@
 
 
 /* enumerate MOD-IO commands */
-typedef enum MOD_IO_COMMAND_CODES {
+typedef enum I2C_COMMAND_CODES {
 	I2C_NO_COMMAND			= 0x00,	// -- No commands
 	I2C_SET_OUTPUTS			= 0x10, // -- Command to set relays
 	I2C_GET_DINPUTS			= 0x20, // -- Read inputs commands
@@ -44,4 +44,4 @@ typedef enum MOD_IO_COMMAND_CODES {
 	I2C_GET_AIN_2				= 0x32,	// -- Read Analog input 2 commands
 	I2C_GET_AIN_3				= 0x33,	// -- Read Analog input 3 commands
 	I2C_SET_SLAVE_ADDR	= 0xF0	// -- New Slave ADDR commands
-} MOD_IO_COMMAND_CODES;
+} I2C_COMMAND_CODES;

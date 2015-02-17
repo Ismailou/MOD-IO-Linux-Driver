@@ -17,6 +17,7 @@
 #include <linux/device.h>
 #include "mod_io_driver.h"
 #include "mod_io.h"
+#include "twi.h"
 
 // module argument's
 
