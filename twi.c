@@ -46,10 +46,10 @@ static void configure_clock(struct a20_twi *twi, uint32_t speed_hz)
 	iowrite32(TWI_CLK_M(m) | TWI_CLK_N(n), &twi->clk);
 }
 
-void a20_twi_init(uint8_t bus, uint32_t speed_hz)
+void a20_twi_init(uint32_t bus, uint32_t speed_hz)
 {
 	uint32_t i = TWI_TIMEOUT;
-	struct a20_twi *twi = (void *)TWI_BASE(bus);
+	struct a20_twi *twi = (void *)bus;
 
 	configure_clock(twi, speed_hz);
 
@@ -115,7 +115,7 @@ int i2c_read(unsigned bus, unsigned chip, unsigned addr,
 {
 	unsigned count = len;
 	enum twi_status expected_status;
-	struct a20_twi *twi = (void *)TWI_BASE(bus);
+	struct a20_twi *twi = (void *)bus;
 
 	 if (wait_until_idle(twi) != TWI_SUCCESS)
 		       return TWI_ERR;
@@ -176,7 +176,7 @@ int i2c_write(unsigned bus, unsigned chip, unsigned addr,
               unsigned alen, const uint8_t *buf, unsigned len)
 {
 	unsigned count = len;
-	struct a20_twi *twi = (void *)TWI_BASE(bus);
+	struct a20_twi *twi = (void *)bus;
 
 	 if (wait_until_idle(twi) != TWI_SUCCESS)
 		       return TWI_ERR;
