@@ -35,8 +35,8 @@
 #define MSG_GET_AIN_2			">> The current value of analog input 2 is : %d\n"
 #define MSG_GET_AIN_3			">> The current value of analog input 3 is : %d\n"
 
-#define	MOD_IO_ARRD_W		0xb0
-#define	MOD_IO_ARRD_R		0xb1
+#define	MOD_IO_ARRD_W		0x5A
+#define	MOD_IO_ARRD_R		0x58
 
 /* Private typedef -----------------------------------------------------------*/
 /* enumerate MOD-IO commands */

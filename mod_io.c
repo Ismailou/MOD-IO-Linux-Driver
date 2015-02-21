@@ -29,13 +29,15 @@ unsigned short int get_mod_io_cmd();
 /* Private functions ---------------------------------------------------------*/
 
 /*************************** Functions ****************************************/ 
-/* @breif		program entry point
+
+/* 
+ * @breif		program entry point
  * @return	return value
  */
  int main(int argc, char** argv)
 {
 	unsigned int command;
-	int argp;
+	int argp = 0;
 	char *msg, *mod_io_device_path;
 	FILE *mod_io_periph;
 
@@ -44,7 +46,13 @@ unsigned short int get_mod_io_cmd();
 	else
 		mod_io_device_path = MOD_ID_DEVICE_PATH;
 		
-	// -- mod_io_periph = fopen(mod_io_device_path, "w+");
+	mod_io_periph = fopen(mod_io_device_path, "w+");
+	if ( mod_io_periph < 0)
+	{
+		printf("Cannot open %s file!",mod_io_device_path);
+		return -1;
+	}
+
 	while(1)
 	{	
 		switch(get_mod_io_cmd()){
@@ -85,21 +93,21 @@ unsigned short int get_mod_io_cmd();
 				break;
 				
 			default:
-				//-- fclose(mod_io_periph);
+				fclose(mod_io_periph);
 				return(EXIT_SUCCESS);
 		}
 	
-	// --	ioctl(mod_io_periph, command, &argp);
-			// -- print the return value in case of GET command
-			if (	command == MOD_IO_IOC_GET_DINPUTS ||
-						command == MOD_IO_IOC_GET_AIN_0 ||
-						command == MOD_IO_IOC_GET_AIN_1 ||
-						command == MOD_IO_IOC_GET_AIN_2 ||
-						command == MOD_IO_IOC_GET_AIN_3 )
-			{
-				printf(msg, argp);
-				argp = 0;
-			}
+		ioctl(mod_io_periph, command, &argp);
+		// -- print the return value in case of GET command
+		if (	command == MOD_IO_IOC_GET_DINPUTS ||
+					command == MOD_IO_IOC_GET_AIN_0 ||
+					command == MOD_IO_IOC_GET_AIN_1 ||
+					command == MOD_IO_IOC_GET_AIN_2 ||
+					command == MOD_IO_IOC_GET_AIN_3 )
+		{
+			printf(msg, argp);
+			argp = 0;
+		}
 	}
 }
 

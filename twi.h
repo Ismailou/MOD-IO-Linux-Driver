@@ -9,6 +9,10 @@
 ******************************************************************************
 */
 
+
+#ifndef TWI_H
+#define TWI_H
+
 /* Includes ------------------------------------------------------------------*/
 #include <linux/types.h>
 
@@ -27,7 +31,18 @@
 #define TWI_CLK_N_MASK          (0x7 << 0)
 #define TWI_CLK_N(n)            (((n) << 3) & TWI_CLK_N_MASK)
 
+#define A20_ADDR	0x87
+
 #define REG											uint32_t
+#define DEBUG_TWI
+
+#ifdef DEBUG_TWI
+	#define TWI_SNAPSHOT(twi)								twi_registers_snapshot(twi);
+	#define PRINT_TWI_STATUS(twi)						get_twi_status_msg(twi);
+#else
+	#define TWI_SNAPSHOT(twi)								" "
+	#define PRINT_TWI_STATUS(twi)						" "
+#endif
 
 /* Private typedef -----------------------------------------------------------*/
 enum twi_err { TWI_SUCCESS, TWI_ERR};
@@ -91,5 +106,10 @@ int i2c_read(unsigned bus, unsigned chip, unsigned addr,
              unsigned alen, uint8_t *buf, unsigned len);
 int i2c_write(unsigned bus, unsigned chip, unsigned addr,
               unsigned alen, const uint8_t *buf, unsigned len);
+void twi_registers_snapshot(struct a20_twi *twi);
+int twi_write(struct a20_twi *twi, unsigned addr, unsigned cmd, unsigned value);
+int twi_read(struct a20_twi *twi, unsigned addr, unsigned cmd, unsigned *value);
+void get_twi_status_msg(struct a20_twi *twi);
+
 #endif                          /* A13_TWI_H */
 // *********************** END OF FILE *****************************************

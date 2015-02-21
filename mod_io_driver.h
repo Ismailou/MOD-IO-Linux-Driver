@@ -17,12 +17,12 @@
 #define AUTHOR			"ismailzemni@gmail.com"
 #define DESCRIPTION	"MOD-IO board Driver Module"
 
-#define DEBUG		1
-#define DEBUG_LEVEL_1	1
+#define DEBUG
+#define DEBUG_LEVEL_1
 
-#define	TWI1_BASE_ADDR	0x01C2AC00
-#define	TWI2_BASE_ADDR	0x01C2B000
-#define	TWI3_BASE_ADDR	0x01C2B400
+#define	TWI0_BASE_ADDR	0x01C2AC00
+#define	TWI1_BASE_ADDR	0x01C2B000
+#define	TWI2_BASE_ADDR	0x01C2B400
 #define TWI_SIZE	(TWI2_BASE_ADDR - TWI1_BASE_ADDR)
 
 #define TWI2_REG_ADDR(i) (*(volatile uint32_t *)(TWI2_BASE_ADDR + i))
@@ -60,9 +60,6 @@ typedef enum I2C_COMMAND_CODES {
 	I2C_GET_AIN_3				= 0x33,	// -- Read Analog input 3 commands
 	I2C_SET_SLAVE_ADDR	= 0xF0	// -- New Slave ADDR commands
 } I2C_COMMAND_CODES;
-typedef struct mod_io_handler {
-	struct cdev *cdev;		/* Char device structure */
-} mod_io_handler;
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/

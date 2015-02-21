@@ -12,6 +12,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "twi.h"
 #include <linux/types.h>
+#include <linux/kernel.h>
 #include <asm/io.h>
 #include <linux/delay.h>
 //--#include <device/i2c.h>
@@ -60,7 +61,7 @@ static void configure_clock(struct a20_twi *twi, uint32_t speed_hz)
 void a20_twi_init(struct a20_twi *twi, uint32_t speed_hz)
 {
 	uint32_t i = TWI_TIMEOUT;
-	twi = (void *)bus;
+	//--twi = (void *)bus;
 
 	configure_clock(twi, speed_hz);
 
@@ -68,6 +69,8 @@ void a20_twi_init(struct a20_twi *twi, uint32_t speed_hz)
 	iowrite32(TWI_CTL_BUS_EN, &twi->ctl);
 	/* Issue soft reset */
 	iowrite32(1, &twi->reset);
+	/* set Allwinner-A20 adress */
+	iowrite32(A20_ADDR, &twi->addr);
 
 	while (i-- && ioread32(&twi->reset))
 		       udelay(1);
@@ -88,7 +91,7 @@ uint8_t i2c_read_data(struct a20_twi *twi)
 {
 	uint32_t tmpreg;
 	
-	tmpreg = ioread32(data, &twi->data);
+	tmpreg = ioread32(&twi->data);
 	clear_interrupt_flag(twi);
 	
 	return tmpreg;
@@ -140,7 +143,7 @@ int i2c_read(unsigned bus, unsigned chip, unsigned addr,
 
 	 if (wait_until_idle(twi) != TWI_SUCCESS)
 		       return TWI_ERR;
-
+	
 	 i2c_send_start(twi);
 	 if (wait_for_status(twi) != TWI_STAT_TX_START)
 		       return TWI_ERR;
@@ -227,5 +230,172 @@ int i2c_write(unsigned bus, unsigned chip, unsigned addr,
 	 i2c_send_stop(twi);
 
 	 return len;
+}
+
+int twi_write(struct a20_twi *twi, unsigned addr, unsigned cmd, unsigned value)
+{
+	if (wait_until_idle(twi) != TWI_SUCCESS)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	i2c_send_start(twi);
+	if (wait_for_status(twi) != TWI_STAT_TX_START)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	/* Send chip address */
+	i2c_send_data(twi, addr);
+	if (wait_for_status(twi) != TWI_STAT_TX_AW_ACK)
+	{
+		PRINT_TWI_STATUS(twi)
+    return TWI_ERR;
+	}
+	
+	TWI_SNAPSHOT(twi)
+
+	/* Send data address */
+	i2c_send_data(twi, cmd);
+	if (wait_for_status(twi) != TWI_STAT_M_TXD_ACK)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	/* Send value */
+	i2c_send_data(twi, value);
+	if (wait_for_status(twi) != TWI_STAT_M_TXD_ACK)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	i2c_send_stop(twi);
+
+	return TWI_SUCCESS;
+}
+
+int twi_read(struct a20_twi *twi, unsigned addr, unsigned cmd, unsigned *value)
+{
+	if (wait_until_idle(twi) != TWI_SUCCESS)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	i2c_send_start(twi);
+	if (wait_for_status(twi) != TWI_STAT_TX_START)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	/* Send chip address */
+	i2c_send_data(twi, addr);
+	if (wait_for_status(twi) != TWI_STAT_TX_AW_ACK)
+	{
+		PRINT_TWI_STATUS(twi)
+    return TWI_ERR;
+	}
+	
+	TWI_SNAPSHOT(twi)
+
+	/* Send data address */
+	i2c_send_data(twi, cmd);
+	if (wait_for_status(twi) != TWI_STAT_M_TXD_ACK)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	TWI_SNAPSHOT(twi)
+
+	/* Start ACK-ing received data */
+	iowrite32((TWI_CTL_A_ACK | ioread32(&twi->ctl)), &twi->ctl);
+
+	if (wait_for_status(twi) != TWI_STAT_M_RXD_ACK)
+	{
+		PRINT_TWI_STATUS(twi)
+		return TWI_ERR;
+	}
+
+	/* Read value */
+	*value = i2c_read_data(twi);
+
+	TWI_SNAPSHOT(twi)
+
+	i2c_send_stop(twi);
+
+	return TWI_SUCCESS;
+}
+
+/* Debug functions -----------------------------------------------------------*/
+void twi_registers_snapshot(struct a20_twi *twi)
+{
+	printk(KERN_ALERT "[ TWI Debug ] addr 0x%x | xaddr 0x%x | data 0x%x |\
+ ctl 0x%x |  stat 0x%x | clk 0x%x | reset 0x%x | efr 0x%x | lcr 0x%x \n",
+				ioread32(&twi->addr),
+				ioread32(&twi->xaddr),
+				ioread32(&twi->data),
+				ioread32(&twi->ctl),
+				ioread32(&twi->stat),
+				ioread32(&twi->clk),
+				ioread32(&twi->reset),
+				ioread32(&twi->efr),
+				ioread32(&twi->lcr));
+}
+
+void get_twi_status_msg(struct a20_twi *twi)
+{
+	switch(ioread32(&twi->stat))
+	{
+		case TWI_STAT_BUS_ERROR:      				printk(KERN_ALERT "Bus error \n"); break;
+		case TWI_STAT_TX_START:       				printk(KERN_ALERT "START condition transmitted  \n"); break;
+		case TWI_STAT_TX_RSTART:     				printk(KERN_ALERT "Repeated START condition transmitted  \n"); break;
+		case TWI_STAT_TX_AW_ACK:      				printk(KERN_ALERT "Address + Write bit transmitted, ACK received  \n"); break;
+		case TWI_STAT_TX_AW_NAK:      				printk(KERN_ALERT "Address + Write bit transmitted, ACK not received  \n"); break;
+		case TWI_STAT_M_TXD_ACK:       				printk(KERN_ALERT "Data byte transmitted in master mode, ACK received \n"); break;
+		case TWI_STAT_M_TXD_NAK:      				printk(KERN_ALERT "Data byte transmitted in master mode, ACK not received \n"); break;
+		case TWI_STAT_LOST_ARB:      				printk(KERN_ALERT "Arbitration lost in address or data byte \n"); break;
+		case TWI_STAT_TX_AR_ACK:      				printk(KERN_ALERT "Address + Read bit transmitted, ACK received \n"); break;
+		case TWI_STAT_TX_AR_NAK:     				printk(KERN_ALERT "Address + Read bit transmitted, ACK not received \n"); break;
+		case TWI_STAT_M_RXD_ACK:      				printk(KERN_ALERT "Data byte received in master mode, ACK transmitted \n"); break;
+		case TWI_STAT_M_RXD_NAK:      				printk(KERN_ALERT "Data byte received in master mode, not ACK transmitted \n"); break;
+		
+		case TWI_STAT_M_RX_AW_ACK:						printk(KERN_ALERT "Slave address + Write bit received, ACK transmitted \n"); break;
+		case TWI_STAT_M_RX_AW_ARB_LOST:				printk(KERN_ALERT "Arbitration lost in address as master, slave address + Write bit received, ACK transmitted \n"); break;
+		case TWI_STAT_RX_GCA:									printk(KERN_ALERT "General Call address received, ACK transmitted \n"); break;
+		case TWI_STAT_M_RX_GCA_ARB_LOST:			printk(KERN_ALERT "Arbitration lost in address as master, General Call address received, ACK transmitted \n"); break;
+		case TWI_STAT_M_AFTER_SLAVE_RXD_ACK: 	printk(KERN_ALERT "Data byte received after slave address received, ACK transmitted \n"); break;
+		case TWI_STAT_M_AFTER_SLAVE_RXD_NACK: printk(KERN_ALERT "Data byte received after slave address received, NACK transmitted \n"); break;
+		case TWI_STAT_RX_AFTER_CGE_ACK:				printk(KERN_ALERT "Data byte received after General Call received, ACK transmitted \n"); break;
+		case TWI_STAT_RX_AFTER_CGE_NACK:			printk(KERN_ALERT "Data byte received after General Call received, NACK transmitted \n"); break;
+		case TWI_STAT_S_RX_STP_MULTI_STR: 		printk(KERN_ALERT "STOP or repeated START condition received in slave mode \n"); break;
+		case TWI_STAT_M_RX_AR: 								printk(KERN_ALERT "Slave address + Read bit received, ACK transmitted \n"); break;
+		case TWI_STAT_M_RX_AR_ARB_LOST: 			printk(KERN_ALERT "Arbitration lost in address as master, slave address + Read bit received, ACK transmitted \n"); break;
+		case TWI_STAT_S_TXD_ACK: 							printk(KERN_ALERT "Data byte transmitted in slave mode, ACK received \n"); break;
+		case TWI_STAT_S_TXD_NACK:  						printk(KERN_ALERT "Data byte transmitted in slave mode, ACK not received \n"); break;
+		case TWI_STAT_S_TXLB_ACK: 						printk(KERN_ALERT "Last byte transmitted in slave mode, ACK received \n"); break;
+		case TWI_STAT_TX_SCND_ADDR_ACK: 			printk(KERN_ALERT "Second Address byte + Write bit transmitted, ACK received \n"); break;
+		case TWI_STAT_TX_SCND_ADDR_NACK: 			printk(KERN_ALERT "Second Address byte + Write bit transmitted, ACK not received \n"); break;
+		case TWI_STAT_IDLE:           				printk(KERN_ALERT "Bus idle : No relevant status information, INT_FLAG=0 \n"); break;
+	default:
+ 		printk(KERN_ALERT "No STAT code matches \n"); break;
+	}
 }
 // *********************** END OF FILE *****************************************

@@ -38,6 +38,24 @@ typedef struct mod_io_handler {
 } mod_io_handler;
 
 /* Private macro -------------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
+int mod_io_open(struct inode *inode, struct file *filp);
+int mod_io_release(struct inode *inode, struct file *filp);
+ssize_t mod_io_read(struct file *filp, char __user *buff,
+		size_t count, loff_t *offp);
+ssize_t mod_io_write(struct file *filp, const char __user *buff,
+		size_t count, loff_t *offp);
+#if defined(HAVE_COMPAT_IOCTL) && defined(HAVE_UNLOCKED_IOCTL)
+long mod_io_compat_ioctl (struct file *filp, unsigned int cmd,
+															 unsigned long argp);
+long mod_io_unlocked_ioctl (struct file *filp, unsigned int cmd,
+															 unsigned long argp);
+#else 
+long mod_io_ioctl (struct inode *inode, struct file *filp, 
+																unsigned int cmd, unsigned long argp);
+#endif
+
 /* Private variables ---------------------------------------------------------*/
 // -- inode informations
 dev_t dev;
@@ -62,24 +80,6 @@ struct file_operations fops = {
 };
 
 mod_io_handler *mod_io_dev;
-
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-int mod_io_open(struct inode *inode, struct file *filp);
-int mod_io_release(struct inode *inode, struct file *filp);
-ssize_t mod_io_read(struct file *filp, char __user *buff,
-		size_t count, loff_t *offp);
-ssize_t mod_io_write(struct file *filp, const char __user *buff,
-		size_t count, loff_t *offp);
-#if defined(HAVE_COMPAT_IOCTL) && defined(HAVE_UNLOCKED_IOCTL)
-long mod_io_compat_ioctl (struct file *filp, unsigned int cmd,
-															 unsigned long argp);
-long mod_io_unlocked_ioctl (struct file *filp, unsigned int cmd,
-															 unsigned long argp);
-#else 
-long mod_io_ioctl (struct inode *inode, struct file *filp, 
-																unsigned int cmd, unsigned long argp);
-#endif
 
 // **************** module functions *********************************
 
@@ -120,7 +120,7 @@ static int mod_io_init(void)
       return -1;
   }
     
-	if ((vtwi = ioremap(TWI1_BASE_ADDR, TWI_SIZE)) == NULL)
+	if ((vtwi = ioremap(TWI0_BASE_ADDR, TWI_SIZE)) == NULL)
 	{
 		  printk(KERN_ERR "[ MOD-IO Driver Debug ] Mapping TWI1 failed\n");
 		  return -1;
@@ -131,9 +131,15 @@ static int mod_io_init(void)
 #endif
 
 	// -- init A20 TWI1
-	twi = (void *)vtwi
+	twi = (void *)vtwi;
+
+	twi_registers_snapshot(twi);
+
 	a20_twi_init(vtwi,100000);
-	
+#ifdef DEBUG
+		printk(KERN_ALERT "[ TWI Debug ] Initialize TWI \n");
+#endif
+	twi_registers_snapshot(twi);
 	return 0;
 }
 
@@ -191,6 +197,9 @@ int mod_io_release(struct inode *inode, struct file *filp){
  */
 ssize_t mod_io_read(struct file *filp, char __user *buff,
 		size_t count, loff_t *offp){
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] MOD-IO read !!\n");
+#endif
 		return -EINTR;
 }
 
@@ -199,7 +208,81 @@ ssize_t mod_io_read(struct file *filp, char __user *buff,
  */
 ssize_t mod_io_write(struct file *filp, const char __user *buff,
 		size_t count, loff_t *offp){
-	return 0;
+
+	uint32_t tmp_reg = 0;
+
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] MOD-IO write !!\n");
+#endif
+/*
+tmp_reg = ioread32(&twi->stat);
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] stat value 0x%x \n",tmp_reg);
+	
+	tmp_reg = ioread32(&twi->ctl);
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] crtl value 0x%x \n",tmp_reg);
+	iowrite32(TWI_CTL_BUS_EN, &twi->ctl);
+	tmp_reg = ioread32(&twi->ctl);
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] crtl value 0x%x \n",tmp_reg);
+
+tmp_reg = ioread32(&twi->stat);
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] stat value 0x%x \n",tmp_reg);
+
+	tmp_reg = ioread32(&twi->ctl);
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] crtl value before START 0x%x \n",tmp_reg);
+	tmp_reg &= ~TWI_CTL_INT_FLAG;
+	tmp_reg |= TWI_CTL_M_START;
+	iowrite32(tmp_reg, &twi->ctl);
+
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] crtl value after START 0x%x \n", ioread32(&twi->ctl));
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] stat value 0x%x \n",ioread32(&twi->stat));
+
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] data value 0x%x \n",ioread32(&twi->data));
+iowrite8(MOD_IO_ARRD_R, &twi->data);
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] data value 0x%x \n",ioread32(&twi->data));
+printk(KERN_ALERT "[ MOD-IO Driver Debug ] stat value 0x%x \n",ioread32(&twi->stat));
+
+twi_registers_snapshot(twi);
+*/
+/*
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] send i2c START \n");
+#endif
+	i2c_send_start(twi);
+	twi_registers_snapshot(twi);
+
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] send MOD-IO adress \n");
+#endif
+	i2c_send_data(twi, MOD_IO_ARRD_R);
+	twi_registers_snapshot(twi);
+
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] send MOD-IO command \n");
+#endif
+	i2c_send_data(twi, I2C_GET_DINPUTS);
+	twi_registers_snapshot(twi);
+
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] read MOD-IO data \n");
+#endif
+	tmp_reg = i2c_read_data(twi);
+	twi_registers_snapshot(twi);
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] value %d \n",tmp_reg);
+#endif
+	
+
+#ifdef DEBUG
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] send i2c STOP \n");
+#endif
+	i2c_send_stop(twi);
+	twi_registers_snapshot(twi);
+*/
+//	if ( twi_write(twi, MOD_IO_ARRD_W, I2C_GET_DINPUTS,0x14) == TWI_ERR)
+//		printk(KERN_ALERT "[ MOD-IO Driver Debug ] TWI send data error ! \n");
+	if ( twi_read(twi, MOD_IO_ARRD_R, I2C_GET_DINPUTS, &tmp_reg) == TWI_ERR)
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] TWI read data error ! \n");
+	return count;
 }
 
 #if defined(HAVE_COMPAT_IOCTL) && defined(HAVE_UNLOCKED_IOCTL)
@@ -212,7 +295,7 @@ long mod_io_ioctl (struct inode *inode, struct file *filp,
 {
 #endif
 
-		uint32_t tmpreg;
+		uint32_t tmp_reg = 0;
 		
 #ifdef DEBUG
 		printk(KERN_ALERT "[ MOD-IO Driver Debug ] IOCTL command !!\n");
@@ -245,52 +328,52 @@ long mod_io_ioctl (struct inode *inode, struct file *filp,
 			
 		case MOD_IO_IOC_GET_DINPUTS: // -- Read inputs commands
 			i2c_send_data(twi, MOD_IO_ARRD_R);
-			i2c_send_data(twi, I2C_GET_OUTPUTS);
-			tmpreg = i2c_read_data(twi);
+			i2c_send_data(twi, I2C_GET_DINPUTS);
+			tmp_reg = i2c_read_data(twi);
 #ifdef DEBUG
-		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Inputs value is : %p!\n", tmpreg);
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Inputs value is : 0x%x!\n", tmp_reg);
 #endif
-			*argp = tmp_reg;
+			argp = (long unsigned int)tmp_reg;
 			break;
 			
 		case MOD_IO_IOC_GET_AIN_0:	// -- Read Analog input 0 commands
 			i2c_send_data(twi, MOD_IO_ARRD_R);
 			i2c_send_data(twi, I2C_GET_AIN_0);
-			tmpreg = i2c_read_data(twi);
+			tmp_reg = i2c_read_data(twi);
 #ifdef DEBUG
-		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 0 value is : %p!\n", tmpreg);
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 0 value is : 0x%x!\n", tmp_reg);
 #endif
-			*argp = tmp_reg;
+			argp = (long unsigned int)tmp_reg;
 			break;
 			
 		case MOD_IO_IOC_GET_AIN_1:	// -- Read Analog input 1 commands
 			i2c_send_data(twi, MOD_IO_ARRD_R);
 			i2c_send_data(twi, I2C_GET_AIN_1);
-			tmpreg = i2c_read_data(twi);
+			tmp_reg = i2c_read_data(twi);
 #ifdef DEBUG
-		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 1 value is : %p!\n", tmpreg);
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 1 value is : 0x%x!\n", tmp_reg);
 #endif
-			*argp = tmp_reg;
+			argp = (long unsigned int)tmp_reg;
 			break;
 			
 		case MOD_IO_IOC_GET_AIN_2:	// -- Read Analog input 2 commands
 			i2c_send_data(twi, MOD_IO_ARRD_R);
 			i2c_send_data(twi, I2C_GET_AIN_2);
-			tmpreg = i2c_read_data(twi);
+			tmp_reg = i2c_read_data(twi);
 #ifdef DEBUG
-		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 2 value is : %p!\n", tmpreg);
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 2 value is : 0x%x!\n", tmp_reg);
 #endif
-			*argp = tmp_reg;
+			argp = (long unsigned int)tmp_reg;
 			break;
 			
 		case MOD_IO_IOC_GET_AIN_3:	// -- Read Analog input 3 commands
 			i2c_send_data(twi, MOD_IO_ARRD_R);
 			i2c_send_data(twi, I2C_GET_AIN_3);
-			tmpreg = i2c_read_data(twi);
+			tmp_reg = i2c_read_data(twi);
 #ifdef DEBUG
-		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 3 value is : %p!\n", tmpreg);
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] Analog input 3 value is : 0x%x!\n", tmp_reg);
 #endif
-			*argp = tmp_reg;
+			argp = (long unsigned int)tmp_reg;
 			break;
 			
 		case MOD_IO_IOC_SET_SLAVE_ADDR: // -- New Slave ADDR commands
@@ -298,7 +381,7 @@ long mod_io_ioctl (struct inode *inode, struct file *filp,
 			// -- i2c_send_data(twi, I2C_SET_SLAVE_ADDR);
 			// -- i2c_send_data(twi, (uint8_t)*argp);
 #ifdef DEBUG
-		printk(KERN_ALERT "[ MOD-IO Driver Debug ] New Slave ADDR value is : %p!\n", tmpreg);
+		printk(KERN_ALERT "[ MOD-IO Driver Debug ] New Slave ADDR value is : 0x%x!\n", tmp_reg);
 #endif
 			break;
 			
