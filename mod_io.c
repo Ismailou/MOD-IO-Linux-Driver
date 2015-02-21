@@ -1,3 +1,15 @@
+/**
+******************************************************************************
+* @file 		mod_io.c
+* @author 	Ismail ZEMNI (ismailzemni@gmail.com)
+*						Mohamed Fadhel SASSI (mohamed.fadhel.sassi@gmail.com )
+* @version 	1.0
+* @date 		22/01/2015
+* @brief		User application of MOD-IO borad.
+******************************************************************************
+*/
+
+/* Includes ------------------------------------------------------------------*/
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,9 +19,20 @@
 #include <linux/ioctl.h>
 #include "mod_io.h"
 
+/* Private define ------------------------------------------------------------*/
+/* Private typedef -----------------------------------------------------------*/
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
 unsigned short int get_mod_io_cmd();
 
-int main(int argc, char** argv)
+/* Private functions ---------------------------------------------------------*/
+
+/*************************** Functions ****************************************/ 
+/* @breif		program entry point
+ * @return	return value
+ */
+ int main(int argc, char** argv)
 {
 	unsigned int command;
 	int argp;
@@ -25,9 +48,6 @@ int main(int argc, char** argv)
 	while(1)
 	{	
 		switch(get_mod_io_cmd()){
-			case NO_COMMAND:	// -- No commands
-				command = MOD_IO_IOC_NO_COMMAND;
-				break;
 				
 			case SET_OUTPUTS: // -- Command to set relays
 				command = MOD_IO_IOC_SET_OUTPUTS;
@@ -93,7 +113,6 @@ unsigned short int get_mod_io_cmd()
 	
 	printf("\n >> Select the MOD-IO command:\n");
 selection:
-	printf("\t0 - No command\n");
 	printf("\t1 - Set outputs\n");
 	printf("\t2 - Read digital inputs\n");
 	printf("\t3 - Read analog input 0\n");
@@ -115,3 +134,4 @@ selection:
 
 	return cmd;
 }
+// *********************** END OF FILE *****************************************

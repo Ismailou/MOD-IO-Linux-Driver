@@ -1,4 +1,18 @@
-// *********************** Defines ***********************************
+/**
+******************************************************************************
+* @file 		mod_io_driver.h
+* @author 	Ismail ZEMNI (ismailzemni@gmail.com)
+*						Mohamed Fadhel SASSI (mohamed.fadhel.sassi@gmail.com )
+* @version 	1.0
+* @date 		22/01/2015
+* @brief		MOD-IO Device Driver.
+******************************************************************************
+*/
+#ifndef MOD_IO_DRIVER_H
+#define MOD_IO_DRIVER_H
+
+/* Includes ------------------------------------------------------------------*/
+/* Private define ------------------------------------------------------------*/
 #define LICENSE			"GPL"
 #define AUTHOR			"ismailzemni@gmail.com"
 #define DESCRIPTION	"MOD-IO board Driver Module"
@@ -34,7 +48,7 @@
 #define TWI_EFR 		TWI2_REG_ADDR(TWI_EFR_OFFSET) 	//-- TWI2 Enhance Feature register
 #define TWI_LCR 		TWI2_REG_ADDR(TWI_LCR_OFFSET) 	//-- TWI2 Line Control register
 
-
+/* Private typedef -----------------------------------------------------------*/
 /* enumerate MOD-IO commands */
 typedef enum I2C_COMMAND_CODES {
 	I2C_NO_COMMAND			= 0x00,	// -- No commands
@@ -46,3 +60,14 @@ typedef enum I2C_COMMAND_CODES {
 	I2C_GET_AIN_3				= 0x33,	// -- Read Analog input 3 commands
 	I2C_SET_SLAVE_ADDR	= 0xF0	// -- New Slave ADDR commands
 } I2C_COMMAND_CODES;
+typedef struct mod_io_handler {
+	struct cdev *cdev;		/* Char device structure */
+} mod_io_handler;
+
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
+
+#endif                          /* MOD_IO_DRIVER_H */
+// *********************** END OF FILE *****************************************

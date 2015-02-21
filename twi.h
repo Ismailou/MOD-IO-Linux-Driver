@@ -1,9 +1,18 @@
+/**
+******************************************************************************
+* @file 		twi.h
+* @author 	Ismail ZEMNI (ismailzemni@gmail.com)
+*						Mohamed Fadhel SASSI (mohamed.fadhel.sassi@gmail.com )
+* @version 	1.0
+* @date 		22/01/2015
+* @brief		TWI hardware Driver.
+******************************************************************************
+*/
 
-#ifndef A13_TWI_H
-#define A13_TWI_H
-
+/* Includes ------------------------------------------------------------------*/
 #include <linux/types.h>
 
+/* Private define ------------------------------------------------------------*/
 /* TWI_CTL values */
 #define TWI_CTL_INT_EN          (1 << 7)
 #define TWI_CTL_BUS_EN          (1 << 6)
@@ -12,6 +21,15 @@
 #define TWI_CTL_INT_FLAG        (1 << 3)
 #define TWI_CTL_A_ACK						(1 << 2)	// -- Interrupt Flag
 
+/* TWI_CLK values */
+#define TWI_CLK_M_MASK          (0xF << 3)
+#define TWI_CLK_M(m)            (((m - 1) << 3) & TWI_CLK_M_MASK)
+#define TWI_CLK_N_MASK          (0x7 << 0)
+#define TWI_CLK_N(n)            (((n) << 3) & TWI_CLK_N_MASK)
+
+#define REG											uint32_t
+
+/* Private typedef -----------------------------------------------------------*/
 enum twi_err { TWI_SUCCESS, TWI_ERR};
 
 /* TWI Code Status values */
@@ -48,14 +66,6 @@ enum twi_status {
 					TWI_STAT_IDLE           				= 0xf8, // -- Bus idle : No relevant status information, INT_FLAG=0
 };
 
-/* TWI_CLK values */
-#define TWI_CLK_M_MASK          (0xF << 3)
-#define TWI_CLK_M(m)            (((m - 1) << 3) & TWI_CLK_M_MASK)
-#define TWI_CLK_N_MASK          (0x7 << 0)
-#define TWI_CLK_N(n)            (((n) << 3) & TWI_CLK_N_MASK)
-
-#define REG											uint32_t
-
 struct a20_twi {
          REG addr;       // -- 0x00: Slave address
          REG xaddr;      // -- 0x04: Extended slave address
@@ -68,6 +78,18 @@ struct a20_twi {
          REG lcr;        // -- 0x20: Line control register
 };
 
-void a20_twi_init(uint8_t bus, uint32_t speed_hz);
-
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
+void a20_twi_init(struct a20_twi *twi, uint32_t speed_hz);
+void i2c_send_data(struct a20_twi *twi, uint8_t data);
+uint8_t i2c_read_data(struct a20_twi *twi);
+void i2c_send_start(struct a20_twi *twi);
+void i2c_send_stop(struct a20_twi *twi);
+int i2c_read(unsigned bus, unsigned chip, unsigned addr,
+             unsigned alen, uint8_t *buf, unsigned len);
+int i2c_write(unsigned bus, unsigned chip, unsigned addr,
+              unsigned alen, const uint8_t *buf, unsigned len);
 #endif                          /* A13_TWI_H */
+// *********************** END OF FILE *****************************************

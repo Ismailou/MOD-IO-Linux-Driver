@@ -1,5 +1,20 @@
+/**
+******************************************************************************
+* @file 		mod_io.h
+* @author 	Ismail ZEMNI (ismailzemni@gmail.com)
+*						Mohamed Fadhel SASSI (mohamed.fadhel.sassi@gmail.com )
+* @version 	1.0
+* @date 		22/01/2015
+* @brief		User application of MOD-IO borad.
+******************************************************************************
+*/
 
-#define MOD_ID_DEVICE_PATH  "/dev/mod_io_device"
+#ifndef MOD_IO_H
+#define MOD_IO_H
+
+/* Includes ------------------------------------------------------------------*/
+/* Private define ------------------------------------------------------------*/
+#define MOD_ID_DEVICE_PATH  "/dev/vtwi"
 
 #define MOD_IO_IOC_MAGIC		'k'
 // -- #define MOD_IO_IOCRESET			_IO(MOD_IO_IOC_MAGIC, 0)
@@ -23,6 +38,7 @@
 #define	MOD_IO_ARRD_W		0xb0
 #define	MOD_IO_ARRD_R		0xb1
 
+/* Private typedef -----------------------------------------------------------*/
 /* enumerate MOD-IO commands */
 typedef enum MOD_IO_COMMAND_CODES {
 	MOD_IO_NO_COMMAND				= 0x00,	// -- No commands
@@ -45,3 +61,11 @@ typedef enum mod_io_cmd {
 	GET_AIN_3,			// -- Read Analog input 3 commands
 	SET_SLAVE_ADDR 	// -- New Slave ADDR commands
 } mod_io_cmd;
+
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
+
+#endif                          /* MOD_IO_H */
+// *********************** END OF FILE *****************************************

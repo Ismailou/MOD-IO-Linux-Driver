@@ -1,26 +1,37 @@
+/**
+******************************************************************************
+* @file 		twi.C
+* @author 	Ismail ZEMNI (ismailzemni@gmail.com)
+*						Mohamed Fadhel SASSI (mohamed.fadhel.sassi@gmail.com )
+* @version 	1.0
+* @date 		22/01/2015
+* @brief		TWI hardware Driver.
+******************************************************************************
+*/
+
+/* Includes ------------------------------------------------------------------*/
 #include "twi.h"
 #include <linux/types.h>
 #include <asm/io.h>
 #include <linux/delay.h>
 //--#include <device/i2c.h>
 
+/* Private define ------------------------------------------------------------*/
 #define	A20_TWI_BASE										0x01C2AC00
 #define TWI_BASE(n)                     (A20_TWI_BASE + 0x400 * (n))
 #define TWI_TIMEOUT                     (50 * 1000)
 
+/* Private typedef -----------------------------------------------------------*/
+/* Private macro -------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Private functions ---------------------------------------------------------*/
 static uint8_t is_busy(struct a20_twi *twi);
 static void configure_clock(struct a20_twi *twi, uint32_t speed_hz);
 static void clear_interrupt_flag(struct a20_twi *twi);
-static void i2c_send_data(struct a20_twi *twi, uint8_t data);
 static enum twi_status wait_for_status(struct a20_twi *twi);
-static void i2c_send_start(struct a20_twi *twi);
-static void i2c_send_stop(struct a20_twi *twi);
-int i2c_read(unsigned bus, unsigned chip, unsigned addr,
-             unsigned alen, uint8_t *buf, unsigned len);
-int i2c_write(unsigned bus, unsigned chip, unsigned addr,
-              unsigned alen, const uint8_t *buf, unsigned len);
-              
-              
+
+/*************************** Functions ****************************************/              
 static uint8_t is_busy(struct a20_twi *twi)
 {
 	return (ioread32(&twi->stat) != TWI_STAT_IDLE);
@@ -46,10 +57,10 @@ static void configure_clock(struct a20_twi *twi, uint32_t speed_hz)
 	iowrite32(TWI_CLK_M(m) | TWI_CLK_N(n), &twi->clk);
 }
 
-void a20_twi_init(uint32_t bus, uint32_t speed_hz)
+void a20_twi_init(struct a20_twi *twi, uint32_t speed_hz)
 {
 	uint32_t i = TWI_TIMEOUT;
-	struct a20_twi *twi = (void *)bus;
+	twi = (void *)bus;
 
 	configure_clock(twi, speed_hz);
 
@@ -67,10 +78,20 @@ static void clear_interrupt_flag(struct a20_twi *twi)
 	iowrite32(ioread32(&twi->ctl) & ~TWI_CTL_INT_FLAG, &twi->ctl);
 }
 
-static void i2c_send_data(struct a20_twi *twi, uint8_t data)
+void i2c_send_data(struct a20_twi *twi, uint8_t data)
 {
 	iowrite32(data, &twi->data);
 	clear_interrupt_flag(twi);
+}
+
+uint8_t i2c_read_data(struct a20_twi *twi)
+{
+	uint32_t tmpreg;
+	
+	tmpreg = ioread32(data, &twi->data);
+	clear_interrupt_flag(twi);
+	
+	return tmpreg;
 }
 
 static enum twi_status wait_for_status(struct a20_twi *twi)
@@ -83,7 +104,7 @@ static enum twi_status wait_for_status(struct a20_twi *twi)
 	return i ? ioread32(&twi->stat) : TWI_STAT_BUS_ERROR;
 }
 
-static void i2c_send_start(struct a20_twi *twi)
+void i2c_send_start(struct a20_twi *twi)
 {
 	uint32_t reg32, i;
 
@@ -99,7 +120,7 @@ static void i2c_send_start(struct a20_twi *twi)
 		     udelay(1);
 }
 
-static void i2c_send_stop(struct a20_twi *twi)
+void i2c_send_stop(struct a20_twi *twi)
 {
 	uint32_t reg32;
 
@@ -207,3 +228,4 @@ int i2c_write(unsigned bus, unsigned chip, unsigned addr,
 
 	 return len;
 }
+// *********************** END OF FILE *****************************************
